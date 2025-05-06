@@ -54,7 +54,7 @@ function App() {
     if (!over) return;
 
     const activeId = active.id;
-    const overId = over.id;
+    let overId = over.id;
 
     // Si el elemento se suelta sobre sí mismo, no hacer nada
     if (activeId === overId) return;
@@ -62,12 +62,18 @@ function App() {
     let sourceListKey = null;
     let destinationListKey = null;
 
+    // Si el drop es sobre una columna vacía, extraer el key correcto
+    if (overId.startsWith('empty-')) {
+      destinationListKey = overId.replace('empty-', '');
+    }
+
     // Encontrar las listas de origen y destino
     Object.keys(lists).forEach((key) => {
       if (lists[key].some((item) => item.id === activeId)) {
         sourceListKey = key;
       }
-      if (lists[key].some((item) => item.id === overId)) {
+      // Solo buscar destination si no es columna vacía
+      if (!destinationListKey && lists[key].some((item) => item.id === overId)) {
         destinationListKey = key;
       }
     });
@@ -101,6 +107,16 @@ function App() {
           const newSourceList = sourceList.filter((item) => item.id !== activeId);
           const newDestinationList = [...destinationList, itemToMove];
 
+          setLists((prev) => ({
+            ...prev,
+            [sourceListKey]: newSourceList,
+            [destinationListKey]: newDestinationList,
+          }));
+        }
+        // Caso especial: columna vacía (destinationList estaba vacío)
+        if (destinationList.length === 0) {
+          const newSourceList = sourceList.filter((item) => item.id !== activeId);
+          const newDestinationList = [itemToMove];
           setLists((prev) => ({
             ...prev,
             [sourceListKey]: newSourceList,
@@ -147,19 +163,25 @@ function EmptyDropZone({ listKey }) {
     <div
       ref={setNodeRef}
       style={{
-        minHeight: 60,
-        border: '2px dashed #64748b',
+        minHeight: 0,
+        height: 72,
+        margin: '8px 0',
+        border: isOver ? '2px solid #38bdf8' : '2px dashed #64748b',
         borderRadius: 8,
-        background: isOver ? '#33415533' : '#1e293b',
+        background: isOver ? '#e0f2fe' : '#1e293b',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: '#94a3b8',
-        fontSize: 16,
-        transition: 'background 0.2s',
+        color: '#64748b',
+        fontSize: 18,
+        fontStyle: 'italic',
+        opacity: isOver ? 0.7 : 1,
+        boxShadow: isOver ? '0 10px 15px -3px rgba(56,189,248,0.2)' : 'none',
+        transition: 'all 0.2s',
       }}
+      className="p-4 rounded-md shadow-md transition-all duration-200 ease-in-out"
     >
-      Arrastra aquí
+      <span>{isOver ? 'Suelta para agregar' : 'Arrastra aquí'}</span>
     </div>
   );
 }
